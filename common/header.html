@@ -1,0 +1,98 @@
+<script type='text/x-handlebars' data-template-name='/connectors/topic-category/tag-toggle-container'>
+  {{tag-toggle topic=topic}}
+</script>
+
+<script type='text/x-handlebars' data-template-name='components/tag-toggle'>
+  {{#if currentUser.staff}}
+    {{#d-button action="toggleTag" class=btnClasses}}
+      {{#if saving}}
+        {{loading-spinner size="small"}}
+        <span>Saving</span>
+      {{else}}
+        {{d-icon btnIcon}}
+        <span>{{btnLabel}}</span>
+      {{/if}}
+    {{/d-button}}
+  {{/if}}
+</script>
+
+<script type="text/discourse-plugin" version="0.8">
+  const computed = require('ember-addons/ember-computed-decorators').default;
+  const observes = require('ember-addons/ember-computed-decorators').observes;
+  const popupAjaxError = require('discourse/lib/ajax-error').default;
+  const ajax = require('discourse/lib/ajax').default;
+  const Topic = require('discourse/models/topic').default;
+  const container = Discourse.__container__;
+  const topicController = container.lookup("controller:topic");
+
+  const TagToggle = Ember.Component.extend({
+    classNames: 'tag-toggle',
+
+    @computed('topic.tags.[]')
+    hasTag(tags) {
+      return tags.indexOf(settings.tag) > -1;
+    },
+
+    removeTag() {
+      let tags = this.get('topic.tags');
+      tags = tags.filter(t => t != settings.tag);
+      this.saveTags(tags);
+    },
+
+    addTag() {
+      let tags = this.get('topic.tags') || [];
+      tags.push(settings.tag);
+      this.saveTags(tags);
+    },
+
+    saveTags(tags) {
+      const topic = this.get('topic');
+
+      this.set('saving', true);
+
+      Topic.update(topic, { tags })
+        .then(() => {
+          topic.set('tags', tags);
+          topicController.set('editingTopic', true);
+        })
+        .catch(popupAjaxError)
+        .finally(() => {
+          this.set('saving', false);
+
+          Ember.run.scheduleOnce('afterRender', () => {
+            topicController.set('editingTopic', false);
+          })
+        });
+    },
+
+    @computed('hasTag')
+    btnClasses(hasTag) {
+      return hasTag ? 'btn-primary' : '';
+    },
+
+    @computed('hasTag')
+    btnIcon(hasTag) {
+      return hasTag ? 'minus' : 'plus';
+    },
+
+    @computed('hasTag', 'adding')
+    btnLabel(hasTag, adding) {
+      let start = hasTag ? 'Remove' : 'Add';
+      return start + ' ' + settings.tag;
+    },
+
+    actions: {
+      toggleTag() {
+        const hasTag = this.get('hasTag');
+
+        if (hasTag) {
+          this.removeTag();
+        } else {
+          this.addTag();
+        }
+      }
+    }
+  });
+
+  Discourse.register('component:tag-toggle', TagToggle);
+</script>

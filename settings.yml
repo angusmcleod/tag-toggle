@@ -1,1 +1,11 @@
-tag: ""
+tag_list:
+  default: ""
+  type: list
+  description:
+    en: Tag list
+
+user_tag_toggle:
+  default: false
+  type: bool
+  description:
+    end: Show user tag toggle

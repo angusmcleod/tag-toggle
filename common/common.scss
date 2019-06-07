@@ -1,4 +1,12 @@
+.tag-toggle-list {
+  display: flex;
+  flex-basis: 100%;
+  margin-top: 10px;
+}
+
 .tag-toggle {
+  margin-right: 5px;
+
   .spinner {
     height: 7px;
     width: 7px;

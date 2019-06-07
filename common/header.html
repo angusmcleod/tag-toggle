@@ -1,19 +1,27 @@
 <script type='text/x-handlebars' data-template-name='/connectors/topic-category/tag-toggle-container'>
-  {{tag-toggle topic=topic}}
+  {{#if currentUser.staff}}
+    {{tag-toggle-list topic=topic}}
+  {{/if}}
+</script>
+
+<script type='text/x-handlebars' data-template-name='components/tag-toggle-list'>
+  {{#if hasTagList}}
+    {{#each tagList as |tag|}}
+      {{tag-toggle topic=topic tag=tag}}
+    {{/each}}
+  {{/if}}
 </script>
 
 <script type='text/x-handlebars' data-template-name='components/tag-toggle'>
-  {{#if currentUser.staff}}
-    {{#d-button action="toggleTag" class=btnClasses}}
-      {{#if saving}}
-        {{loading-spinner size="small"}}
-        <span>Saving</span>
-      {{else}}
-        {{d-icon btnIcon}}
-        <span>{{btnLabel}}</span>
-      {{/if}}
-    {{/d-button}}
-  {{/if}}
+  {{#d-button action="toggleTag" class=btnClasses}}
+    {{#if saving}}
+      {{loading-spinner size="small"}}
+      <span>Saving</span>
+    {{else}}
+      {{d-icon btnIcon}}
+      <span>{{btnLabel}}</span>
+    {{/if}}
+  {{/d-button}}
 </script>
 
 <script type="text/discourse-plugin" version="0.8">
@@ -25,23 +33,48 @@
   const container = Discourse.__container__;
   const topicController = container.lookup("controller:topic");
 
+  const TagToggleList = Ember.Component.extend({
+    classNames: 'tag-toggle-list',
+    hasTagList: Ember.computed.notEmpty('tagList'),
+
+    didInsertElement() {
+      Ember.run.scheduleOnce('afterRender', () => {
+        this.$().insertAfter($('.title-wrapper .topic-category'));
+      })
+    },
+
+    @computed()
+    tagList() {
+      console.log()
+      let tagList = settings.tag_list.split('|');
+      if (settings.user_tag_toggle) {
+        tagList.push(this.currentUser.username);
+      }
+      return tagList;
+    }
+  });
+
+  Discourse.register('component:tag-toggle-list', TagToggleList);
+
   const TagToggle = Ember.Component.extend({
     classNames: 'tag-toggle',
 
-    @computed('topic.tags.[]')
-    hasTag(tags) {
-      return tags.indexOf(settings.tag) > -1;
+    @computed('topic.tags.[]', 'tag')
+    hasTag(tags, tag) {
+      return tags.indexOf(tag) > -1;
     },
 
     removeTag() {
+      const tag = this.get('tag');
       let tags = this.get('topic.tags');
-      tags = tags.filter(t => t != settings.tag);
+      tags = tags.filter(t => t != tag);
       this.saveTags(tags);
     },
 
     addTag() {
+      const tag = this.get('tag');
       let tags = this.get('topic.tags') || [];
-      tags.push(settings.tag);
+      tags.push(tag);
       this.saveTags(tags);
     },
 
@@ -75,10 +108,10 @@
       return hasTag ? 'minus' : 'plus';
     },
 
-    @computed('hasTag', 'adding')
-    btnLabel(hasTag, adding) {
+    @computed('hasTag', 'adding', 'tag')
+    btnLabel(hasTag, adding, tag) {
       let start = hasTag ? 'Remove' : 'Add';
-      return start + ' ' + settings.tag;
+      return start + ' ' + tag;
     },
 
     actions: {

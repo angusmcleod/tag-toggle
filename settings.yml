@@ -8,4 +8,4 @@ user_tag_toggle:
   default: false
   type: bool
   description:
-    end: Show user tag toggle
+    en: Show user tag toggle

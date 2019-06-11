@@ -48,7 +48,8 @@
       console.log()
       let tagList = settings.tag_list.split('|');
       if (settings.user_tag_toggle) {
-        tagList.push(this.currentUser.username);
+        const username = this.currentUser.username;
+        tagList.push(username.replace(/\./g,''));
       }
       return tagList;
     }
